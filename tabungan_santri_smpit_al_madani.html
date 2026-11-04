@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabungan Santri SMPIT Al-Madani</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .sidebar-active {
+            background-color: rgba(5, 150, 105, 0.1);
+            color: #059669;
+            border-right: 4px solid #059669;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; }
+        }
+        /* Smooth transitions for collapsible sidebar */
+        #sidebar {
+            transition: transform 0.25s ease-in-out, margin-left 0.25s ease-in-out, width 0.25s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="flex-1 flex flex-col min-h-screen relative overflow-hidden">
+
+        <!-- TOP HEADER (z-index ditingkatkan agar tidak tertimpa content/sidebar) -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
+            <div class="px-4 py-3 sm:px-6 flex items-center justify-between">
+                <!-- Left: Burger Toggle & Logo -->
+                <div class="flex items-center space-x-3">
+                    <!-- Burger Button -->
+                    <button id="toggleSidebarBtn" onclick="toggleSidebar()" class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none transition" title="Sembunyikan/Tampilkan Menu">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0">
+                        <i class="fa-solid fa-kaaba"></i>
+                    </div>
+                    <div class="hidden sm:block">
+                        <h1 class="font-extrabold text-base sm:text-lg leading-tight text-slate-900">SMPIT Al-Madani</h1>
+                        <p class="text-[11px] sm:text-xs text-slate-500 font-medium">Sistem Tabungan Santri Digital</p>
+                    </div>
+                </div>
+
+                <!-- Right: Clock & User Info -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <!-- Live Clock with Date -->
+                    <div class="hidden md:flex flex-col items-end bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-700">
+                        <div class="flex items-center font-bold">
+                            <i class="fa-regular fa-clock text-brand-600 mr-1.5"></i>
+                            <span id="liveClock">--:--:-- WIB</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-[10px] text-slate-500 mt-0.5">
+                            <span id="liveDate">-- --- ----</span>
+                            <span class="text-slate-300">•</span>
+                            <span class="text-emerald-600 font-semibold flex items-center" title="Terhubung ke Database Cloud">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Cloud Sync
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- User Profile / Logout -->
+                    <div class="flex items-center space-x-2 sm:space-x-3 border-l border-slate-200 pl-3 sm:pl-4">
+                        <div class="text-right hidden sm:block">
+                            <p id="userNameDisplay" class="text-xs font-bold text-slate-800">Nama Pengguna</p>
+                            <span id="userRoleBadge" class="inline-block px-2 py-0.5 text-[10px] font-semibold bg-brand-100 text-brand-800 rounded-full">ROLE</span>
+                        </div>
+                        <button onclick="logout()" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition" title="Keluar">
+                            <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile Clock Display -->
+            <div class="md:hidden bg-slate-50 px-4 py-1.5 text-center border-t border-slate-100 text-xs font-medium text-slate-600 flex justify-between items-center">
+                <span><i class="fa-regular fa-calendar-days text-brand-600 mr-1"></i><span id="liveDateMobile">-- --- ----</span></span>
+                <span><i class="fa-regular fa-clock text-brand-600 mr-1"></i><span id="liveClockMobile">--:--:-- WIB</span></span>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT WRAPPER -->
+        <div class="flex-1 flex overflow-hidden relative">
+
+            <!-- Mobile Overlay Backdrop -->
+            <div id="sidebarBackdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-20 hidden md:hidden"></div>
+
+            <!-- SIDEBAR NAVIGATION -->
+            <aside id="sidebar" class="w-64 bg-white border-r border-slate-200 fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 z-30 flex flex-col justify-between shrink-0 no-print shadow-lg md:shadow-none">
+                <div class="py-4">
+                    <div class="px-4 mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                        <span>Navigasi Utama</span>
+                        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-base"></i></button>
+                    </div>
+                    <nav class="space-y-1">
+                        <button onclick="navigateTo('home')" id="nav-home" class="w-full flex items-center px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 sidebar-active transition">
+                            <i class="fa-solid fa-chart-pie w-5 mr-3 text-center text-brand-600"></i> Beranda & Grafik
+                        </button>
+                        
+                        <!-- Admin Only Menu: Kelola Data Santri -->
+                        <button onclick="navigateTo('santri')" id="nav-santri" class="admin-only w-full flex items-center px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-users-gear w-5 mr-3 text-center text-brand-600"></i> Kelola Data Santri
+                        </button>
+
+                        <!-- Admin Only Menu: Setor/Tarik -->
+                        <button onclick="navigateTo('transaksi')" id="nav-transaksi" class="admin-only w-full flex items-center px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-money-bill-transfer w-5 mr-3 text-center text-brand-600"></i> Input Setor / Tarik
+                        </button>
+                        
+                        <button onclick="navigateTo('riwayat')" id="nav-riwayat" class="w-full flex items-center px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-clock-rotate-left w-5 mr-3 text-center text-brand-600"></i> Riwayat Transaksi
+                        </button>
+                        
+                        <!-- Admin Only Menu: Rekapitulasi Lengkap -->
+                        <button onclick="navigateTo('rekap')" id="nav-rekap" class="admin-only w-full flex items-center px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-file-invoice-dollar w-5 mr-3 text-center text-brand-600"></i> Rekapitulasi Seluruh
+                        </button>
+                        
+                        <!-- Admin Only Menu: Page Editor / CMS -->
+                        <div class="admin-only border-t border-slate-100 pt-3 mt-3">
+                            <div class="px-4 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Pengaturan Admin</div>
+                            <button onclick="navigateTo('cms')" id="nav-cms" class="w-full flex items-center px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                                <i class="fa-solid fa-pen-to-square w-5 mr-3 text-center text-amber-500"></i> Kelola Pengumuman & CMS
+                            </button>
+                        </div>
+                    </nav>
+                </div>
+
+                <!-- Sidebar Footer Info -->
+                <div class="p-4 border-t border-slate-100 bg-slate-50">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm shadow-sm shrink-0">
+                            <i class="fa-solid fa-school"></i>
+                        </div>
+                        <div class="text-xs truncate">
+                            <p class="font-bold text-slate-700">SMPIT Al-Madani</p>
+                            <p class="text-slate-500 truncate">Tahun Ajaran 2026/2027</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8 bg-slate-50">
+                
+                <!-- 1. PAGE: HOME / DASHBOARD -->
+                <section id="page-home" class="space-y-6">
+                    <!-- Hero Banner -->
+                    <div class="bg-gradient-to-r from-brand-900 via-brand-800 to-brand-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                        <div class="absolute right-0 top-0 -mt-4 -mr-4 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                        <div class="relative z-10 max-w-2xl">
+                            <span class="inline-block px-3 py-1 rounded-full bg-white/15 text-xs font-semibold mb-3 backdrop-blur-md">
+                                <i class="fa-solid fa-bullhorn mr-1.5 text-gold-400"></i> Portal Resmi Tabungan
+                            </span>
+                            <h2 id="cmsWelcomeTitle" class="text-2xl sm:text-3xl font-extrabold tracking-tight">Assalamu'alaikum, Selamat Datang!</h2>
+                            <p id="cmsWelcomeDesc" class="mt-2 text-emerald-100 text-sm sm:text-base leading-relaxed">
+                                Portal Resmi Informasi Pengelolaan Tabungan Santri SMPIT Al-Madani.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Santri Detail Card (Khusus Wali Santri) -->
+                    <div id="waliSantriCard" class="hidden bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-user-graduate"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 uppercase font-semibold tracking-wider">Informasi Santri</span>
+                                <h3 id="waliSantriNama" class="text-lg font-bold text-slate-900">--</h3>
+                                <p class="text-xs text-slate-500 font-medium">
+                                    ID Santri: <span id="waliSantriNis" class="font-mono font-bold text-slate-700">--</span> | 
+                                    Kelas: <span id="waliSantriKelas" class="font-bold text-slate-700">--</span> |
+                                    Wali: <span id="waliSantriOrtu" class="font-bold text-slate-700">--</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="bg-brand-50 border border-brand-100 p-3 rounded-lg text-right">
+                            <p class="text-xs text-brand-700 font-semibold">Status Tabungan</p>
+                            <p class="text-sm font-extrabold text-brand-800">AKTIF / REKAP OTOMATIS</p>
+                        </div>
+                    </div>
+
+                    <!-- KPI METRICS CARDS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Total Saldo -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p id="kpiLabelSaldo" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Saldo Terkumpul</p>
+                                <h3 id="statTotalSaldo" class="text-2xl font-extrabold text-slate-900 mt-1">Rp 0</h3>
+                                <p class="text-xs text-emerald-600 font-semibold mt-1 flex items-center">
+                                    <i class="fa-solid fa-circle-check mr-1"></i> Data Realtime
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-wallet"></i>
+                            </div>
+                        </div>
+
+                        <!-- Total Penyetoran -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p id="kpiLabelSetor" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Penyetoran</p>
+                                <h3 id="statTotalSetor" class="text-2xl font-extrabold text-slate-900 mt-1">Rp 0</h3>
+                                <p class="text-xs text-blue-600 font-semibold mt-1">
+                                    Akumulasi Masuk
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-circle-arrow-down"></i>
+                            </div>
+                        </div>
+
+                        <!-- Total Penarikan -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p id="kpiLabelTarik" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Penarikan</p>
+                                <h3 id="statTotalTarik" class="text-2xl font-extrabold text-slate-900 mt-1">Rp 0</h3>
+                                <p class="text-xs text-amber-600 font-semibold mt-1">
+                                    Akumulasi Keluar
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-circle-arrow-up"></i>
+                            </div>
+                        </div>
+
+                        <!-- Admin: Jumlah Santri | Wali: Jumlah Transaksi -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p id="kpiLabelCustom" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Jumlah Santri Aktif</p>
+                                <h3 id="statCustomVal" class="text-2xl font-extrabold text-slate-900 mt-1">0 Santri</h3>
+                                <p id="kpiSubCustom" class="text-xs text-purple-600 font-semibold mt-1">
+                                    Kelas 7, 8, & 9
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                                <i id="kpiIconCustom" class="fa-solid fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHART & ANNOUNCEMENT GRID -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Financial Circulation Chart -->
+                        <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 id="chartTitle" class="font-bold text-slate-800 text-base">Grafik Sirkulasi Keuangan</h3>
+                                    <p id="chartSubtitle" class="text-xs text-slate-500">Perbandingan Penyetoran vs Penarikan bulanan</p>
+                                </div>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium">Tahun 2026</span>
+                            </div>
+                            <div class="relative h-64 sm:h-72 w-full">
+                                <canvas id="circulationsChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Live Announcements / News Board -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                                    <h3 class="font-bold text-slate-800 text-base flex items-center">
+                                        <i class="fa-solid fa-bullhorn text-amber-500 mr-2"></i> Info & Pengumuman
+                                    </h3>
+                                    <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">TERBARU</span>
+                                </div>
+                                <div id="announcementList" class="space-y-3 max-h-72 overflow-y-auto pr-1">
+                                    <!-- Dynamic items -->
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-100 text-center">
+                                <p class="text-xs text-slate-400">Diperbarui oleh Pengelola Tabungan Sekolah</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 1.5 PAGE: KELOLA SANTRI (ADMIN ONLY) -->
+                <section id="page-santri" class="hidden space-y-6 admin-only">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">Kelola Data Santri & Wali</h2>
+                            <p class="text-sm text-slate-500">Tambah, perbarui, atau hapus akun santri dan wali santri</p>
+                        </div>
+                        <button onclick="openAddSantriModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center shadow transition">
+                            <i class="fa-solid fa-user-plus mr-2"></i> Tambah Santri Baru
+                        </button>
+                    </div>
+
+                    <!-- Filter / Search Santri -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3">
+                        <div class="flex-1 relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="searchSantriInput" oninput="renderSantriManagementTable()" placeholder="Cari ID Santri, nama santri, atau wali..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div class="w-full sm:w-48">
+                            <select id="filterSantriKelas" onchange="renderSantriManagementTable()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="ALL">Semua Kelas</option>
+                                <option value="7">Kelas 7</option>
+                                <option value="8">Kelas 8</option>
+                                <option value="9">Kelas 9</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Santri Management -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-3 px-4">ID Santri</th>
+                                        <th class="py-3 px-4">Nama Santri</th>
+                                        <th class="py-3 px-4">Kelas</th>
+                                        <th class="py-3 px-4">Orang Tua / Wali</th>
+                                        <th class="py-3 px-4 text-right">Saldo Saat Ini</th>
+                                        <th class="py-3 px-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="santriManagementTable" class="divide-y divide-slate-100">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. PAGE: PENYETORAN & PENARIKAN (KHUSUS ADMIN) -->
+                <section id="page-transaksi" class="hidden space-y-6 admin-only">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">Penyetoran & Penarikan Tabungan</h2>
+                            <p class="text-sm text-slate-500">Input transaksi baru sirkulasi dana santri</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Transaction Form -->
+                        <div class="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3 flex items-center">
+                                <i class="fa-solid fa-pen-clip text-brand-600 mr-2"></i> Form Transaksi
+                            </h3>
+
+                            <form id="transactionForm" onsubmit="handleTransactionSubmit(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Pilih Santri / ID Santri</label>
+                                    <select id="txSantriSelect" required onchange="autofillSantriData()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                        <option value="">-- Pilih Santri --</option>
+                                    </select>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">ID Santri</label>
+                                        <input type="text" id="txNis" readonly class="w-full bg-slate-100 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 font-mono">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Kelas</label>
+                                        <input type="text" id="txKelas" readonly class="w-full bg-slate-100 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Jenis Transaksi</label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <label class="border rounded-lg p-2.5 flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-50 text-sm font-medium">
+                                            <input type="radio" name="txType" value="SETOR" checked class="text-brand-600 focus:ring-brand-500">
+                                            <span class="text-emerald-700 font-bold"><i class="fa-solid fa-arrow-down mr-1"></i> Setoran</span>
+                                        </label>
+                                        <label class="border rounded-lg p-2.5 flex items-center justify-center space-x-2 cursor-pointer hover:bg-slate-50 text-sm font-medium">
+                                            <input type="radio" name="txType" value="TARIK" class="text-amber-600 focus:ring-amber-500">
+                                            <span class="text-amber-700 font-bold"><i class="fa-solid fa-arrow-up mr-1"></i> Penarikan</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Jumlah (Rp)</label>
+                                    <input type="number" id="txAmount" min="1000" step="1000" required placeholder="Contoh: 50000" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Tanggal Transaksi</label>
+                                    <input type="date" id="txDate" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Keterangan / Catatan</label>
+                                    <textarea id="txNote" rows="2" placeholder="Contoh: Tabungan mingguan / Pembelian buku" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                                </div>
+
+                                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg shadow transition duration-150 flex items-center justify-center">
+                                    <i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Transaksi
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Recent Transaction Side Log -->
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-3">
+                                Log Transaksi Terbaru (10 Terakhir)
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                                        <tr>
+                                            <th class="py-3 px-3">Tanggal</th>
+                                            <th class="py-3 px-3">Santri</th>
+                                            <th class="py-3 px-3">Jenis</th>
+                                            <th class="py-3 px-3 text-right">Nominal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentTxTable" class="divide-y divide-slate-100">
+                                        <!-- Dynamic JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. PAGE: RIWAYAT TRANSAKSI -->
+                <section id="page-riwayat" class="hidden space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 id="riwayatTitle" class="text-2xl font-bold text-slate-900">Riwayat Transaksi Tabungan</h2>
+                            <p id="riwayatSubtitle" class="text-sm text-slate-500">Daftar sirkulasi tabungan santri</p>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div id="filterBar" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3">
+                        <div class="flex-1 relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="searchTxInput" oninput="renderRiwayatTable()" placeholder="Cari tanggal, keterangan, nominal..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div class="w-full md:w-48">
+                            <select id="filterTxType" onchange="renderRiwayatTable()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="ALL">Semua Jenis</option>
+                                <option value="SETOR">Setoran (Masuk)</option>
+                                <option value="TARIK">Penarikan (Keluar)</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-48 admin-only">
+                            <select id="filterTxKelas" onchange="renderRiwayatTable()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="ALL">Semua Kelas</option>
+                                <option value="7">Kelas 7</option>
+                                <option value="8">Kelas 8</option>
+                                <option value="9">Kelas 9</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Full Table -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-3 px-4">Waktu / ID</th>
+                                        <th class="py-3 px-4 admin-only">ID Santri & Nama</th>
+                                        <th class="py-3 px-4 admin-only">Kelas</th>
+                                        <th class="py-3 px-4">Jenis</th>
+                                        <th class="py-3 px-4 text-right">Nominal</th>
+                                        <th class="py-3 px-4">Keterangan</th>
+                                        <th class="py-3 px-4 text-center admin-only">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="riwayatFullTable" class="divide-y divide-slate-100">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. PAGE: HASIL REKAPITULASI (ADMIN & WALI) -->
+                <section id="page-rekap" class="hidden space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">Rekapitulasi Saldo Tabungan</h2>
+                            <p class="text-sm text-slate-500">Laporan akumulasi simpanan santri</p>
+                        </div>
+                        <div class="flex items-center space-x-2 no-print admin-only">
+                            <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center shadow transition">
+                                <i class="fa-solid fa-file-excel mr-2"></i> Ekspor CSV
+                            </button>
+                            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center shadow transition">
+                                <i class="fa-solid fa-print mr-2"></i> Cetak Laporan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Rekap Per Kelas Cards (Khusus Admin) -->
+                    <div class="admin-only grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <span class="text-xs font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-md">KELAS 7</span>
+                            <div class="mt-3">
+                                <p class="text-xs text-slate-500">Total Saldo Kelas 7</p>
+                                <h4 id="rekapSaldoK7" class="text-xl font-extrabold text-slate-900">Rp 0</h4>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <span class="text-xs font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-md">KELAS 8</span>
+                            <div class="mt-3">
+                                <p class="text-xs text-slate-500">Total Saldo Kelas 8</p>
+                                <h4 id="rekapSaldoK8" class="text-xl font-extrabold text-slate-900">Rp 0</h4>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <span class="text-xs font-bold bg-purple-100 text-purple-800 px-2.5 py-1 rounded-md">KELAS 9</span>
+                            <div class="mt-3">
+                                <p class="text-xs text-slate-500">Total Saldo Kelas 9</p>
+                                <h4 id="rekapSaldoK9" class="text-xl font-extrabold text-slate-900">Rp 0</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detail Rekap Santri Table -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 id="rekapTableTitle" class="font-bold text-slate-800">Rincian Saldo Santri</h3>
+                            <button onclick="openAddSantriModal()" class="admin-only text-xs bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg font-semibold flex items-center shadow">
+                                <i class="fa-solid fa-user-plus mr-1.5"></i> Tambah Santri Baru
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-3 px-4">ID Santri</th>
+                                        <th class="py-3 px-4">Nama Santri</th>
+                                        <th class="py-3 px-4">Kelas</th>
+                                        <th class="py-3 px-4 text-right">Total Setoran</th>
+                                        <th class="py-3 px-4 text-right">Total Penarikan</th>
+                                        <th class="py-3 px-4 text-right">Sisa Saldo Tabungan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rekapSantriTable" class="divide-y divide-slate-100">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. PAGE: CMS / PAGE EDITOR (ADMIN ONLY) -->
+                <section id="page-cms" class="hidden space-y-6 admin-only">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">CMS & Kelola Pengumuman</h2>
+                            <p class="text-sm text-slate-500">Atur konten sambutan dan terbitkan pengumuman langsung</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- CMS Editor Banner & Text -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="font-bold text-slate-900 border-b border-slate-100 pb-2">Edit Teks Sambutan Dashboard</h3>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Judul Sambutan</label>
+                                <input type="text" id="cmsInputTitle" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Deskripsi Sambutan</label>
+                                <textarea id="cmsInputDesc" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500"></textarea>
+                            </div>
+                            <button onclick="saveCmsHeader()" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2 rounded-lg text-sm shadow">
+                                <i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Sambutan
+                            </button>
+                        </div>
+
+                        <!-- CMS Pengumuman Board -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="font-bold text-slate-900 border-b border-slate-100 pb-2">Terbitkan Info / Pengumuman Baru</h3>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Judul Pengumuman</label>
+                                <input type="text" id="cmsAnnounceTitle" placeholder="Contoh: Pengambilan Uang Saku Akhir Semester" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Isi Pesan Pengumuman</label>
+                                <textarea id="cmsAnnounceBody" rows="3" placeholder="Tulis rincian pengumuman di sini..." class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500"></textarea>
+                            </div>
+                            <button onclick="addNewAnnouncement()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded-lg text-sm shadow">
+                                <i class="fa-solid fa-paper-plane mr-2"></i> Terbitkan Pengumuman
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="bg-white border-t border-slate-200 py-3.5 px-6 text-center text-xs text-slate-500 no-print">
+            &copy; 2026 <strong>SMPIT Al-Madani</strong>. Portal Resmi Pengelolaan Tabungan Santri.
+        </footer>
+    </div>
+
+    <!-- MODAL ADD / EDIT SANTRI (ADMIN) -->
+    <div id="addSantriModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="santriModalTitle" class="font-bold text-slate-900">Tambah Data Santri & Wali</h3>
+                <button onclick="closeAddSantriModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveSantriData(event)" class="space-y-3">
+                <input type="hidden" id="editOriginalNis">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">ID Santri</label>
+                    <input type="text" id="newSantriNis" required placeholder="Contoh: 2026001" class="w-full border rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Lengkap Santri</label>
+                    <input type="text" id="newSantriNama" required placeholder="Nama santri..." class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Orang Tua / Wali</label>
+                    <input type="text" id="newSantriOrtu" required placeholder="Nama wali santri..." class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Kelas</label>
+                    <select id="newSantriKelas" required class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500">
+                        <option value="7">Kelas 7</option>
+                        <option value="8">Kelas 8</option>
+                        <option value="9">Kelas 9</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Password Akun Wali</label>
+                    <input type="password" id="newSantriPass" required placeholder="••••••••" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500">
+                </div>
+                
+                <!-- Action Buttons & Delete Santri inside Modal -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <button type="button" id="deleteSantriModalBtn" onclick="deleteSantriFromModal()" class="hidden px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold flex items-center transition">
+                        <i class="fa-solid fa-trash-can mr-1.5"></i> Hapus Santri Ini
+                    </button>
+                    <div class="flex items-center space-x-2 ml-auto">
+                        <button type="button" onclick="closeAddSantriModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600 font-semibold">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-bold transition">Simpan Santri</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL AUTHENTICATION (LOGIN & REGISTRASI) -->
+    <div id="authModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-gradient-to-r from-brand-800 to-brand-600 p-6 text-white text-center">
+                <div class="w-12 h-12 rounded-full bg-white/20 mx-auto flex items-center justify-center text-2xl mb-2">
+                    <i class="fa-solid fa-kaaba"></i>
+                </div>
+                <h3 class="text-xl font-extrabold">SMPIT Al-Madani</h3>
+                <p class="text-xs text-emerald-100">Portal Keuangan & Tabungan Santri</p>
+            </div>
+            
+            <div class="p-6">
+                <!-- Toggle Tabs Login / Reg -->
+                <div class="flex border-b border-slate-200 mb-6">
+                    <button onclick="switchAuthTab('login')" id="tabLoginBtn" class="flex-1 py-2 text-center text-sm font-bold border-b-2 border-brand-600 text-brand-600">Masuk</button>
+                    <button onclick="switchAuthTab('register')" id="tabRegisterBtn" class="flex-1 py-2 text-center text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600">Pendaftaran Wali</button>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Username / ID Santri</label>
+                        <input type="text" id="loginUsername" required placeholder="Username Admin / ID Santri" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Password</label>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg shadow transition">
+                        Masuk ke Aplikasi
+                    </button>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="registerForm" onsubmit="handleRegister(event)" class="hidden space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">ID Santri</label>
+                        <input type="text" id="regNis" required placeholder="Contoh: 2026001" class="w-full border rounded-lg px-3 py-2 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nama Lengkap Santri</label>
+                        <input type="text" id="regNama" required placeholder="Nama Santri" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nama Orang Tua / Wali</label>
+                        <input type="text" id="regOrtu" required placeholder="Nama Wali Santri" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Kelas</label>
+                        <select id="regKelas" class="w-full border rounded-lg px-3 py-2 text-sm">
+                            <option value="7">Kelas 7</option>
+                            <option value="8">Kelas 8</option>
+                            <option value="9">Kelas 9</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Password Buat Akun</label>
+                        <input type="password" id="regPassword" required placeholder="••••••••" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg shadow transition">
+                        Daftarkan Akun Wali
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-sm">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMessage">Pesan notifikasi</span>
+    </div>
+
+    <!-- FIREBASE CLOUD DATABASE SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // APP CONFIG & APP ID
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'almadani-tabungan-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "demo-key",
+                authDomain: "demo.firebaseapp.com",
+                projectId: "demo-project",
+                storageBucket: "demo.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:demo"
+            };
+
+        // INITIALIZE FIREBASE
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // PUBLIC COLLECTIONS PATHS
+        const getPublicCollection = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
+        const getPublicDoc = (name, id) => doc(db, 'artifacts', appId, 'public', 'data', name, id);
+
+        // INITIAL AUTH
+        let isCloudReady = false;
+        async function initCloudAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                isCloudReady = true;
+                subscribeToCloudData();
+            } catch (err) {
+                console.warn("Cloud Auth Notice (Fallback Local Storage State Active):", err.message);
+            }
+        }
+
+        // REALTIME SUBSCRIPTIONS
+        function subscribeToCloudData() {
+            if (!auth.currentUser) return;
+
+            // 1. Santri List Listener
+            onSnapshot(getPublicCollection('santri'), (snapshot) => {
+                const cloudSantri = [];
+                snapshot.forEach(doc => cloudSantri.push(doc.data()));
+                if (cloudSantri.length > 0 || isCloudReady) {
+                    window.santriList = cloudSantri;
+                    if (typeof window.populateSantriSelect === 'function') {
+                        window.populateSantriSelect();
+                    }
+                    if (typeof window.renderAllData === 'function') {
+                        window.renderAllData();
+                    }
+                }
+            }, (error) => console.log("Santri Cloud Error:", error));
+
+            // 2. Transactions Listener
+            onSnapshot(getPublicCollection('transactions'), (snapshot) => {
+                const cloudTx = [];
+                snapshot.forEach(doc => cloudTx.push(doc.data()));
+                cloudTx.sort((a, b) => new Date(b.date + ' ' + (b.id || '')) - new Date(a.date + ' ' + (a.id || '')));
+                window.transactions = cloudTx;
+                if (typeof window.renderAllData === 'function') {
+                    window.renderAllData();
+                }
+            }, (error) => console.log("Transactions Cloud Error:", error));
+
+            // 3. Announcements Listener
+            onSnapshot(getPublicCollection('announcements'), (snapshot) => {
+                const cloudAnn = [];
+                snapshot.forEach(doc => cloudAnn.push(doc.data()));
+                if (cloudAnn.length > 0) {
+                    window.announcements = cloudAnn;
+                    if (typeof window.renderAnnouncements === 'function') {
+                        window.renderAnnouncements();
+                    }
+                }
+            }, (error) => console.log("Announcements Cloud Error:", error));
+        }
+
+        // EXPOSE CLOUD METHODS TO GLOBAL WINDOW
+        window.cloudDb = {
+            saveSantri: async (santriObj) => {
+                if (!auth.currentUser) return;
+                try {
+                    await setDoc(getPublicDoc('santri', String(santriObj.nis)), santriObj);
+                } catch (e) { console.error("Cloud Save Santri Error:", e); }
+            },
+            deleteSantri: async (nis) => {
+                if (!auth.currentUser) return;
+                try {
+                    await deleteDoc(getPublicDoc('santri', String(nis)));
+                } catch (e) { console.error("Cloud Delete Santri Error:", e); }
+            },
+            saveTx: async (txObj) => {
+                if (!auth.currentUser) return;
+                try {
+                    await setDoc(getPublicDoc('transactions', String(txObj.id)), txObj);
+                } catch (e) { console.error("Cloud Save Tx Error:", e); }
+            },
+            deleteTx: async (txId) => {
+                if (!auth.currentUser) return;
+                try {
+                    await deleteDoc(getPublicDoc('transactions', String(txId)));
+                } catch (e) { console.error("Cloud Delete Tx Error:", e); }
+            },
+            saveAnnouncement: async (annObj, id) => {
+                if (!auth.currentUser) return;
+                try {
+                    await setDoc(getPublicDoc('announcements', String(id)), annObj);
+                } catch (e) { console.error("Cloud Save Ann Error:", e); }
+            },
+            deleteAnnouncement: async (id) => {
+                if (!auth.currentUser) return;
+                try {
+                    await deleteDoc(getPublicDoc('announcements', String(id)));
+                } catch (e) { console.error("Cloud Delete Ann Error:", e); }
+            }
+        };
+
+        // START CLOUD AUTH ON LOAD
+        window.addEventListener('DOMContentLoaded', initCloudAuth);
+    </script>
+
+    <!-- APPLICATION JAVASCRIPT ENGINE -->
+    <script>
+        // STORAGE KEYS (Fallback Local Storage)
+        const STORAGE_SANTRI = 'madani_santri_v2';
+        const STORAGE_TX = 'madani_tx_v2';
+        const STORAGE_ANN = 'madani_ann_v2';
+        const STORAGE_CMS = 'madani_cms_v2';
+        const STORAGE_USER = 'madani_user_v2';
+
+        // LOCAL STORAGE UTILITIES
+        function getStorage(key, fallback) {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : fallback;
+        }
+
+        function setStorage(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // GLOBAL STATE
+        window.santriList = getStorage(STORAGE_SANTRI, []);
+        window.transactions = getStorage(STORAGE_TX, []);
+        window.announcements = getStorage(STORAGE_ANN, []);
+        let cmsContent = getStorage(STORAGE_CMS, {
+            title: "Assalamu'alaikum, Selamat Datang!",
+            desc: "Portal Informasi Pengelolaan Tabungan Santri SMPIT Al-Madani. Transparan, Akuntabel, dan Terpercaya."
+        });
+
+        let currentUser = getStorage(STORAGE_USER, null);
+        let chartInstance = null;
+        let isSidebarOpenDesktop = true;
+
+        // SIDEBAR TOGGLE ENGINE (Mobile & Desktop)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const isMobile = window.innerWidth < 768;
+
+            if (isMobile) {
+                const isHidden = sidebar.classList.contains('-translate-x-full');
+                if (isHidden) {
+                    sidebar.classList.remove('-translate-x-full');
+                    backdrop.classList.remove('hidden');
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    backdrop.classList.add('hidden');
+                }
+            } else {
+                isSidebarOpenDesktop = !isSidebarOpenDesktop;
+                if (!isSidebarOpenDesktop) {
+                    sidebar.style.marginLeft = '-16rem';
+                } else {
+                    sidebar.style.marginLeft = '0px';
+                }
+            }
+
+            // Redraw Chart when sidebar resizes page width
+            setTimeout(() => {
+                if (chartInstance) chartInstance.resize();
+            }, 300);
+        }
+
+        // INIT APP ON LOAD
+        window.onload = function() {
+            startLiveClock();
+            initFormDate();
+
+            if (currentUser) {
+                closeAuthModal();
+                setupUserRoleView();
+            } else {
+                openAuthModal();
+            }
+
+            populateSantriSelect();
+            renderAllData();
+        };
+
+        // POPULATE SANTRI DROPDOWN FOR TRANSACTIONS
+        window.populateSantriSelect = function() {
+            const select = document.getElementById('txSantriSelect');
+            if (!select) return;
+
+            if (!santriList || santriList.length === 0) {
+                select.innerHTML = '<option value="">-- Belum Ada Data Santri --</option>';
+                return;
+            }
+
+            select.innerHTML = '<option value="">-- Pilih Santri --</option>' + 
+                santriList.map(s => `<option value="${s.nis}">${s.nama} (${s.nis}) - Kelas ${s.kelas}</option>`).join('');
+        };
+
+        window.autofillSantriData = function() {
+            const select = document.getElementById('txSantriSelect');
+            const nisInput = document.getElementById('txNis');
+            const kelasInput = document.getElementById('txKelas');
+            if (!select || !nisInput || !kelasInput) return;
+
+            const selectedNis = select.value;
+            const santri = santriList.find(s => s.nis === selectedNis);
+            if (santri) {
+                nisInput.value = santri.nis;
+                kelasInput.value = 'Kelas ' + santri.kelas;
+            } else {
+                nisInput.value = '';
+                kelasInput.value = '';
+            }
+        };
+
+        // LIVE CLOCK & DATE (WIB)
+        function startLiveClock() {
+            function updateTime() {
+                const now = new Date();
+                const timeOptions = { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                const dateOptions = { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+                
+                const timeString = now.toLocaleTimeString('id-ID', timeOptions) + ' WIB';
+                const dateString = now.toLocaleDateString('id-ID', dateOptions);
+
+                document.getElementById('liveClock').innerText = timeString;
+                document.getElementById('liveClockMobile').innerText = timeString;
+                document.getElementById('liveDate').innerText = dateString;
+                document.getElementById('liveDateMobile').innerText = dateString;
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        function initFormDate() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('txDate');
+            if (dateInput) dateInput.value = today;
+        }
+
+        // AUTHENTICATION MODAL LOGIC
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const regForm = document.getElementById('registerForm');
+            const tabLoginBtn = document.getElementById('tabLoginBtn');
+            const tabRegBtn = document.getElementById('tabRegisterBtn');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                tabLoginBtn.className = 'flex-1 py-2 text-center text-sm font-bold border-b-2 border-brand-600 text-brand-600';
+                tabRegBtn.className = 'flex-1 py-2 text-center text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600';
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                tabRegBtn.className = 'flex-1 py-2 text-center text-sm font-bold border-b-2 border-brand-600 text-brand-600';
+                tabLoginBtn.className = 'flex-1 py-2 text-center text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600';
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+
+            if (u.toLowerCase() === 'admin' && p === 'admin123') {
+                currentUser = { username: 'admin', nama: 'Admin Utama', role: 'admin' };
+            } else {
+                const foundSantri = santriList.find(s => s.nis === u);
+                if (foundSantri && foundSantri.password === p) {
+                    currentUser = { 
+                        username: foundSantri.nis, 
+                        nama: `Wali ${foundSantri.nama}`, 
+                        role: 'user', 
+                        nis: foundSantri.nis,
+                        santriData: foundSantri
+                    };
+                } else {
+                    showToast('Username/ID Santri atau Password tidak sesuai!', 'error');
+                    return;
+                }
+            }
+
+            setStorage(STORAGE_USER, currentUser);
+            closeAuthModal();
+            setupUserRoleView();
+            renderAllData();
+            navigateTo('home');
+            showToast(`Selamat datang, ${currentUser.nama}!`, 'success');
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const nis = document.getElementById('regNis').value.trim();
+            const nama = document.getElementById('regNama').value.trim();
+            const ortu = document.getElementById('regOrtu').value.trim();
+            const kelas = document.getElementById('regKelas').value;
+            const password = document.getElementById('regPassword').value.trim();
+
+            if (santriList.some(s => s.nis === nis)) {
+                showToast('ID Santri sudah terdaftar!', 'error');
+                return;
+            }
+
+            const newSantri = { nis, nama, ortu, kelas, password };
+            santriList.push(newSantri);
+            setStorage(STORAGE_SANTRI, santriList);
+
+            if (window.cloudDb) window.cloudDb.saveSantri(newSantri);
+
+            currentUser = { 
+                username: nis, 
+                nama: `Wali ${nama}`, 
+                role: 'user', 
+                nis: nis,
+                santriData: newSantri
+            };
+            setStorage(STORAGE_USER, currentUser);
+
+            populateSantriSelect();
+            closeAuthModal();
+            setupUserRoleView();
+            renderAllData();
+            navigateTo('home');
+            showToast('Akun Wali Santri berhasil didaftarkan!', 'success');
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem(STORAGE_USER);
+            openAuthModal();
+            showToast('Anda telah keluar dari sistem.', 'info');
+        }
+
+        function setupUserRoleView() {
+            if (!currentUser) return;
+
+            document.getElementById('userNameDisplay').innerText = currentUser.nama;
+            const badge = document.getElementById('userRoleBadge');
+            const adminElements = document.querySelectorAll('.admin-only');
+            const waliCard = document.getElementById('waliSantriCard');
+
+            if (currentUser.role === 'admin') {
+                badge.innerText = 'ADMINISTRATOR';
+                badge.className = 'inline-block px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded-full';
+                adminElements.forEach(el => el.classList.remove('hidden'));
+                if (waliCard) waliCard.classList.add('hidden');
+
+                document.getElementById('kpiLabelSaldo').innerText = 'Total Saldo Terkumpul';
+                document.getElementById('kpiLabelSetor').innerText = 'Total Penyetoran';
+                document.getElementById('kpiLabelTarik').innerText = 'Total Penarikan';
+                document.getElementById('kpiLabelCustom').innerText = 'Jumlah Santri Aktif';
+                document.getElementById('kpiSubCustom').innerText = 'Kelas 7, 8, & 9';
+                document.getElementById('kpiIconCustom').className = 'fa-solid fa-users';
+
+                document.getElementById('chartTitle').innerText = 'Grafik Sirkulasi Keuangan Seluruh Santri';
+                document.getElementById('chartSubtitle').innerText = 'Akumulasi Penyetoran vs Penarikan';
+                document.getElementById('riwayatTitle').innerText = 'Riwayat Seluruh Transaksi';
+                document.getElementById('riwayatSubtitle').innerText = 'Daftar sirkulasi tabungan seluruh santri SMPIT Al-Madani';
+                document.getElementById('rekapTableTitle').innerText = 'Rincian Saldo Seluruh Santri';
+            } else {
+                badge.innerText = 'WALI SANTRI';
+                badge.className = 'inline-block px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-800 rounded-full';
+                adminElements.forEach(el => el.classList.add('hidden'));
+                
+                const sData = santriList.find(s => s.nis === currentUser.nis) || currentUser.santriData || {};
+                if (waliCard) {
+                    waliCard.classList.remove('hidden');
+                    document.getElementById('waliSantriNama').innerText = sData.nama || '--';
+                    document.getElementById('waliSantriNis').innerText = sData.nis || '--';
+                    document.getElementById('waliSantriKelas').innerText = 'Kelas ' + (sData.kelas || '--');
+                    document.getElementById('waliSantriOrtu').innerText = sData.ortu || '--';
+                }
+
+                document.getElementById('kpiLabelSaldo').innerText = 'Sisa Saldo Tabungan Anak';
+                document.getElementById('kpiLabelSetor').innerText = 'Total Setoran Anak';
+                document.getElementById('kpiLabelTarik').innerText = 'Total Penarikan Anak';
+                document.getElementById('kpiLabelCustom').innerText = 'Total Transaksi Anak';
+                document.getElementById('kpiSubCustom').innerText = 'Setoran & Penarikan';
+                document.getElementById('kpiIconCustom').className = 'fa-solid fa-receipt';
+
+                document.getElementById('chartTitle').innerText = `Grafik Tabungan: ${sData.nama || 'Anak'}`;
+                document.getElementById('chartSubtitle').innerText = 'Tren sirkulasi tabungan pribadi anaknya';
+                document.getElementById('riwayatTitle').innerText = `Riwayat Tabungan: ${sData.nama || 'Anak'}`;
+                document.getElementById('riwayatSubtitle').innerText = 'Sirkulasi mutasi rekening tabungan santri';
+                document.getElementById('rekapTableTitle').innerText = 'Ringkasan Rekapitulasi Tabungan Anak';
+            }
+        }
+
+        // NAVIGATION SPA SWITCHER
+        function navigateTo(pageId) {
+            const pages = ['home', 'santri', 'transaksi', 'riwayat', 'rekap', 'cms'];
+            pages.forEach(p => {
+                const pageEl = document.getElementById(`page-${p}`);
+                const navBtn = document.getElementById(`nav-${p}`);
+                if (pageEl) pageEl.classList.add('hidden');
+                if (navBtn) navBtn.classList.remove('sidebar-active');
+            });
+
+            const activePage = document.getElementById(`page-${pageId}`);
+            const activeNav = document.getElementById(`nav-${pageId}`);
+            if (activePage) activePage.classList.remove('hidden');
+            if (activeNav) activeNav.classList.add('sidebar-active');
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebarBackdrop').classList.add('hidden');
+            }
+
+            if (pageId === 'home') {
+                setTimeout(renderChart, 100);
+            }
+        }
+
+        // TRANSACTION HANDLERS
+        function handleTransactionSubmit(e) {
+            e.preventDefault();
+            if (currentUser.role !== 'admin') return;
+
+            const nis = document.getElementById('txNis').value;
+            const santri = santriList.find(s => s.nis === nis);
+            if (!santri) {
+                showToast('Pilih santri yang valid terlebih dahulu!', 'error');
+                return;
+            }
+
+            const type = document.querySelector('input[name="txType"]:checked').value;
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const date = document.getElementById('txDate').value;
+            const note = document.getElementById('txNote').value || (type === 'SETOR' ? 'Setoran Tabungan' : 'Penarikan Tabungan');
+
+            if (type === 'TARIK') {
+                const currentBalance = getSantriBalance(nis);
+                if (amount > currentBalance) {
+                    showToast(`Saldo santri tidak mencukupi! (Saldo: Rp ${currentBalance.toLocaleString('id-ID')})`, 'error');
+                    return;
+                }
+            }
+
+            const newTx = {
+                id: 'TX-' + Math.floor(100000 + Math.random() * 900000),
+                nis: santri.nis,
+                nama: santri.nama,
+                kelas: santri.kelas,
+                type: type,
+                amount: amount,
+                date: date,
+                note: note
+            };
+
+            transactions.unshift(newTx);
+            setStorage(STORAGE_TX, transactions);
+
+            if (window.cloudDb) window.cloudDb.saveTx(newTx);
+
+            document.getElementById('transactionForm').reset();
+            initFormDate();
+            document.getElementById('txNis').value = '';
+            document.getElementById('txKelas').value = '';
+
+            renderAllData();
+            showToast('Transaksi berhasil disimpan ke Cloud!', 'success');
+        }
+
+        function deleteTransaction(txId) {
+            if (currentUser.role !== 'admin') return;
+            if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+                transactions = transactions.filter(t => t.id !== txId);
+                setStorage(STORAGE_TX, transactions);
+
+                if (window.cloudDb) window.cloudDb.deleteTx(txId);
+
+                renderAllData();
+                showToast('Transaksi berhasil dihapus dari Cloud.', 'info');
+            }
+        }
+
+        function getSantriBalance(nis) {
+            return transactions.reduce((acc, tx) => {
+                if (tx.nis === nis) {
+                    return tx.type === 'SETOR' ? acc + tx.amount : acc - tx.amount;
+                }
+                return acc;
+            }, 0);
+        }
+
+        // RENDER DATA ENGINE
+        function renderAllData() {
+            renderKPIs();
+            renderChart();
+            renderAnnouncements();
+            renderSantriManagementTable();
+            renderRecentTxTable();
+            renderRiwayatTable();
+            renderRekap();
+            renderCmsInputs();
+        }
+
+        // RENDER RECENT TRANSACTIONS TABLE (LOG 10 TERAKHIR)
+        function renderRecentTxTable() {
+            const table = document.getElementById('recentTxTable');
+            if (!table) return;
+
+            let activeTx = transactions;
+            if (currentUser && currentUser.role === 'user') {
+                activeTx = transactions.filter(t => String(t.nis) === String(currentUser.nis));
+            }
+
+            const recent = activeTx.slice(0, 10);
+
+            if (recent.length === 0) {
+                table.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-400">Belum ada data transaksi</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = recent.map(t => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 font-mono text-xs text-slate-600">${t.date || '-'}</td>
+                    <td class="py-2.5 px-3 font-bold text-xs text-slate-800">${t.nama} <span class="font-normal text-slate-400 text-[10px]">(${t.nis})</span></td>
+                    <td class="py-2.5 px-3">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded ${t.type === 'SETOR' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${t.type === 'SETOR' ? 'SETOR' : 'TARIK'}
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-3 text-right font-bold text-xs ${t.type === 'SETOR' ? 'text-emerald-600' : 'text-amber-600'}">
+                        ${t.type === 'SETOR' ? '+' : '-'} Rp ${t.amount.toLocaleString('id-ID')}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // RENDER RIWAYAT TRANSAKSI TABLE FULL
+        function renderRiwayatTable() {
+            const table = document.getElementById('riwayatFullTable');
+            if (!table) return;
+
+            const searchKey = (document.getElementById('searchTxInput')?.value || '').toLowerCase();
+            const filterType = document.getElementById('filterTxType')?.value || 'ALL';
+            const filterKelas = document.getElementById('filterTxKelas')?.value || 'ALL';
+
+            let activeTx = transactions;
+            if (currentUser && currentUser.role === 'user') {
+                activeTx = transactions.filter(t => String(t.nis) === String(currentUser.nis));
+            }
+
+            const filtered = activeTx.filter(t => {
+                const matchSearch = String(t.nama || '').toLowerCase().includes(searchKey) ||
+                                    String(t.nis || '').toLowerCase().includes(searchKey) ||
+                                    String(t.note || '').toLowerCase().includes(searchKey) ||
+                                    String(t.date || '').toLowerCase().includes(searchKey) ||
+                                    String(t.amount || '').includes(searchKey);
+                const matchType = filterType === 'ALL' || t.type === filterType;
+                const matchKelas = filterKelas === 'ALL' || String(t.kelas) === filterKelas;
+                return matchSearch && matchType && matchKelas;
+            });
+
+            if (filtered.length === 0) {
+                table.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">Belum ada riwayat transaksi yang cocok</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = filtered.map(t => `
+                <tr class="hover:bg-slate-50">
+                    <td class="py-3 px-4 font-mono text-xs text-slate-600">
+                        <div>${t.date || '-'}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">${t.id}</div>
+                    </td>
+                    <td class="py-3 px-4 admin-only font-bold text-slate-800">
+                        ${t.nama}
+                        <div class="font-mono text-xs text-slate-400 font-normal">ID: ${t.nis}</div>
+                    </td>
+                    <td class="py-3 px-4 admin-only"><span class="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded">Kelas ${t.kelas}</span></td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 text-xs font-bold rounded ${t.type === 'SETOR' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${t.type === 'SETOR' ? 'SETORAN' : 'PENARIKAN'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-right font-extrabold ${t.type === 'SETOR' ? 'text-emerald-600' : 'text-amber-600'}">
+                        ${t.type === 'SETOR' ? '+' : '-'} Rp ${t.amount.toLocaleString('id-ID')}
+                    </td>
+                    <td class="py-3 px-4 text-slate-600 text-xs">${t.note || '-'}</td>
+                    <td class="py-3 px-4 text-center admin-only">
+                        <button type="button" onclick="deleteTransaction('${t.id}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition" title="Hapus Transaksi">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // RENDER KPI STATS
+        function renderKPIs() {
+            let activeTx = transactions;
+            let displaySantri = santriList;
+
+            if (currentUser && currentUser.role === 'user') {
+                activeTx = transactions.filter(t => t.nis === currentUser.nis);
+                displaySantri = santriList.filter(s => s.nis === currentUser.nis);
+            }
+
+            let totalSetor = 0;
+            let totalTarik = 0;
+
+            activeTx.forEach(t => {
+                if (t.type === 'SETOR') totalSetor += t.amount;
+                if (t.type === 'TARIK') totalTarik += t.amount;
+            });
+
+            const totalSaldo = totalSetor - totalTarik;
+
+            const elSaldo = document.getElementById('statTotalSaldo');
+            const elSetor = document.getElementById('statTotalSetor');
+            const elTarik = document.getElementById('statTotalTarik');
+            const elValCustom = document.getElementById('statCustomVal');
+
+            if (elSaldo) elSaldo.innerText = `Rp ${totalSaldo.toLocaleString('id-ID')}`;
+            if (elSetor) elSetor.innerText = `Rp ${totalSetor.toLocaleString('id-ID')}`;
+            if (elTarik) elTarik.innerText = `Rp ${totalTarik.toLocaleString('id-ID')}`;
+
+            if (currentUser && currentUser.role === 'admin') {
+                if (elValCustom) elValCustom.innerText = `${santriList.length} Santri`;
+            } else {
+                if (elValCustom) elValCustom.innerText = `${activeTx.length} Transaksi`;
+            }
+        }
+
+        // MANAGEMENT SANTRI TABLE & CRUD (ADMIN)
+        function renderSantriManagementTable() {
+            const table = document.getElementById('santriManagementTable');
+            if (!table) return;
+
+            const searchKey = (document.getElementById('searchSantriInput')?.value || '').toLowerCase();
+            const filterKelas = document.getElementById('filterSantriKelas')?.value || 'ALL';
+
+            const filtered = santriList.filter(s => {
+                const matchSearch = String(s.nama || '').toLowerCase().includes(searchKey) ||
+                                    String(s.nis || '').toLowerCase().includes(searchKey) ||
+                                    String(s.ortu || '').toLowerCase().includes(searchKey);
+                const matchKelas = filterKelas === 'ALL' || String(s.kelas) === filterKelas;
+                return matchSearch && matchKelas;
+            });
+
+            if (filtered.length === 0) {
+                table.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Belum ada data santri yang terdaftar</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = filtered.map(s => {
+                const balance = getSantriBalance(s.nis);
+                const safeNis = String(s.nis).replace(/'/g, "\\'");
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 font-mono font-medium text-slate-700">${s.nis}</td>
+                        <td class="py-3 px-4 font-bold text-slate-800">${s.nama}</td>
+                        <td class="py-3 px-4"><span class="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded">Kelas ${s.kelas}</span></td>
+                        <td class="py-3 px-4 text-slate-600">${s.ortu}</td>
+                        <td class="py-3 px-4 text-right font-extrabold text-brand-700">Rp ${balance.toLocaleString('id-ID')}</td>
+                        <td class="py-3 px-4 text-center">
+                            <button type="button" onclick="editSantri('${safeNis}')" class="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 rounded-lg font-semibold text-xs inline-flex items-center shadow-sm transition">
+                                <i class="fa-solid fa-user-pen mr-1.5"></i> Edit / Kelola
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openAddSantriModal() {
+            document.getElementById('santriModalTitle').innerText = 'Tambah Data Santri & Wali';
+            document.getElementById('editOriginalNis').value = '';
+            document.getElementById('newSantriNis').value = '';
+            document.getElementById('newSantriNis').readOnly = false;
+            document.getElementById('newSantriNama').value = '';
+            document.getElementById('newSantriOrtu').value = '';
+            document.getElementById('newSantriKelas').value = '7';
+            document.getElementById('newSantriPass').value = '';
+            
+            // Sembunyikan tombol hapus jika modal dalam mode "Tambah Baru"
+            document.getElementById('deleteSantriModalBtn').classList.add('hidden');
+            document.getElementById('addSantriModal').classList.remove('hidden');
+        }
+
+        function closeAddSantriModal() {
+            document.getElementById('addSantriModal').classList.add('hidden');
+        }
+
+        function editSantri(nis) {
+            const s = santriList.find(item => String(item.nis) === String(nis));
+            if (!s) return;
+            document.getElementById('santriModalTitle').innerText = 'Edit / Kelola Santri';
+            document.getElementById('editOriginalNis').value = s.nis;
+            document.getElementById('newSantriNis').value = s.nis;
+            document.getElementById('newSantriNis').readOnly = true;
+            document.getElementById('newSantriNama').value = s.nama;
+            document.getElementById('newSantriOrtu').value = s.ortu;
+            document.getElementById('newSantriKelas').value = s.kelas;
+            document.getElementById('newSantriPass').value = s.password || '';
+
+            // Tampilkan tombol hapus di dalam modal jika mode "Edit Santri"
+            document.getElementById('deleteSantriModalBtn').classList.remove('hidden');
+            document.getElementById('addSantriModal').classList.remove('hidden');
+        }
+
+        function saveSantriData(e) {
+            e.preventDefault();
+            if (currentUser.role !== 'admin') return;
+
+            const originalNis = document.getElementById('editOriginalNis').value;
+            const nis = document.getElementById('newSantriNis').value.trim();
+            const nama = document.getElementById('newSantriNama').value.trim();
+            const ortu = document.getElementById('newSantriOrtu').value.trim();
+            const kelas = document.getElementById('newSantriKelas').value;
+            const password = document.getElementById('newSantriPass').value.trim();
+
+            if (!originalNis && santriList.some(s => String(s.nis) === String(nis))) {
+                showToast('ID Santri sudah terdaftar!', 'error');
+                return;
+            }
+
+            const santriObj = { nis, nama, ortu, kelas, password };
+
+            if (originalNis) {
+                // Update mode
+                const index = santriList.findIndex(s => String(s.nis) === String(originalNis));
+                if (index !== -1) {
+                    santriList[index] = santriObj;
+                }
+            } else {
+                // Add mode
+                santriList.push(santriObj);
+            }
+
+            setStorage(STORAGE_SANTRI, santriList);
+
+            if (window.cloudDb) {
+                window.cloudDb.saveSantri(santriObj);
+            }
+
+            closeAddSantriModal();
+            populateSantriSelect();
+            renderAllData();
+            showToast(`Data santri ${nama} berhasil disimpan!`, 'success');
+        }
+
+        function deleteSantriFromModal() {
+            const nisToDel = String(document.getElementById('editOriginalNis').value);
+            const santriObj = santriList.find(s => String(s.nis) === nisToDel);
+            const namaSantri = santriObj ? santriObj.nama : nisToDel;
+
+            if (confirm(`Apakah Anda yakin ingin menghapus santri "${namaSantri}" (ID: ${nisToDel})?\n\nSeluruh data santri dan riwayat transaksi terkait akan dihapus permanen.`)) {
+                // 1. Hapus dari Local State
+                santriList = santriList.filter(s => String(s.nis) !== nisToDel);
+                setStorage(STORAGE_SANTRI, santriList);
+
+                const toDeleteTx = transactions.filter(t => String(t.nis) === nisToDel);
+                transactions = transactions.filter(t => String(t.nis) !== nisToDel);
+                setStorage(STORAGE_TX, transactions);
+
+                // 2. Tutup Modal & Render Ulang UI
+                closeAddSantriModal();
+                populateSantriSelect();
+                renderAllData();
+                showToast(`Santri ${namaSantri} telah dihapus.`, 'info');
+
+                // 3. Hapus dari Cloud Firestore
+                if (window.cloudDb) {
+                    window.cloudDb.deleteSantri(nisToDel).catch(err => console.error(err));
+                    toDeleteTx.forEach(tx => {
+                        window.cloudDb.deleteTx(tx.id).catch(err => console.error(err));
+                    });
+                }
+            }
+        }
+
+        // REKAPITULASI TABLE & SUMMARY
+        function renderRekap() {
+            let k7 = 0, k8 = 0, k9 = 0;
+            transactions.forEach(t => {
+                const val = t.type === 'SETOR' ? t.amount : -t.amount;
+                if (String(t.kelas) === '7') k7 += val;
+                if (String(t.kelas) === '8') k8 += val;
+                if (String(t.kelas) === '9') k9 += val;
+            });
+
+            const elK7 = document.getElementById('rekapSaldoK7');
+            const elK8 = document.getElementById('rekapSaldoK8');
+            const elK9 = document.getElementById('rekapSaldoK9');
+
+            if (elK7) elK7.innerText = `Rp ${k7.toLocaleString('id-ID')}`;
+            if (elK8) elK8.innerText = `Rp ${k8.toLocaleString('id-ID')}`;
+            if (elK9) elK9.innerText = `Rp ${k9.toLocaleString('id-ID')}`;
+
+            const table = document.getElementById('rekapSantriTable');
+            if (!table) return;
+
+            let displaySantri = santriList;
+            if (currentUser && currentUser.role === 'user') {
+                displaySantri = santriList.filter(s => String(s.nis) === String(currentUser.nis));
+            }
+
+            if (displaySantri.length === 0) {
+                table.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400">Belum ada data santri untuk rekapitulasi</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = displaySantri.map(s => {
+                let totalSetor = 0;
+                let totalTarik = 0;
+
+                transactions.forEach(t => {
+                    if (String(t.nis) === String(s.nis)) {
+                        if (t.type === 'SETOR') totalSetor += t.amount;
+                        if (t.type === 'TARIK') totalTarik += t.amount;
+                    }
+                });
+
+                const saldo = totalSetor - totalTarik;
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 font-mono text-slate-700">${s.nis}</td>
+                        <td class="py-3 px-4 font-bold text-slate-800">${s.nama}</td>
+                        <td class="py-3 px-4"><span class="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-700 rounded">Kelas ${s.kelas}</span></td>
+                        <td class="py-3 px-4 text-right font-semibold text-emerald-600">Rp ${totalSetor.toLocaleString('id-ID')}</td>
+                        <td class="py-3 px-4 text-right font-semibold text-amber-600">Rp ${totalTarik.toLocaleString('id-ID')}</td>
+                        <td class="py-3 px-4 text-right font-extrabold text-brand-700">Rp ${saldo.toLocaleString('id-ID')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // CHART.JS CIRCULATION RENDERER
+        function renderChart() {
+            const ctx = document.getElementById('circulationsChart');
+            if (!ctx) return;
+
+            if (chartInstance) chartInstance.destroy();
+
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            const setorMonthly = new Array(12).fill(0);
+            const tarikMonthly = new Array(12).fill(0);
+
+            let activeTx = transactions;
+            if (currentUser && currentUser.role === 'user') {
+                activeTx = transactions.filter(t => String(t.nis) === String(currentUser.nis));
+            }
+
+            activeTx.forEach(t => {
+                if (!t.date) return;
+                const m = new Date(t.date).getMonth();
+                if (m >= 0 && m < 12) {
+                    if (t.type === 'SETOR') setorMonthly[m] += t.amount;
+                    if (t.type === 'TARIK') tarikMonthly[m] += t.amount;
+                }
+            });
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Penyetoran (Rp)',
+                            data: setorMonthly,
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Penarikan (Rp)',
+                            data: tarikMonthly,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => 'Rp ' + (value >= 1000 ? (value / 1000) + 'k' : value)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ANNOUNCEMENT & CMS LOGIC
+        function renderAnnouncements() {
+            const list = document.getElementById('announcementList');
+            if (!list) return;
+
+            if (announcements.length === 0) {
+                list.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-lg">Belum ada pengumuman terbaru.</div>`;
+                return;
+            }
+
+            list.innerHTML = announcements.map((ann, i) => `
+                <div class="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1">
+                    <div class="flex justify-between items-start">
+                        <h4 class="font-bold text-xs text-slate-800">${ann.title}</h4>
+                        <span class="text-[10px] text-slate-400 font-mono">${ann.date || ''}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">${ann.body}</p>
+                    ${currentUser && currentUser.role === 'admin' ? `
+                        <div class="text-right pt-1">
+                            <button onclick="deleteAnnouncement('${ann.id || i}')" class="text-[10px] text-rose-600 hover:underline">Hapus Info</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderCmsInputs() {
+            const titleEl = document.getElementById('cmsInputTitle');
+            const descEl = document.getElementById('cmsInputDesc');
+            if (titleEl) titleEl.value = cmsContent.title;
+            if (descEl) descEl.value = cmsContent.desc;
+
+            const cmsWelcomeTitle = document.getElementById('cmsWelcomeTitle');
+            const cmsWelcomeDesc = document.getElementById('cmsWelcomeDesc');
+            if (cmsWelcomeTitle) cmsWelcomeTitle.innerText = cmsContent.title;
+            if (cmsWelcomeDesc) cmsWelcomeDesc.innerText = cmsContent.desc;
+        }
+
+        function saveCmsHeader() {
+            if (currentUser.role !== 'admin') return;
+            cmsContent.title = document.getElementById('cmsInputTitle').value;
+            cmsContent.desc = document.getElementById('cmsInputDesc').value;
+
+            setStorage(STORAGE_CMS, cmsContent);
+            renderCmsInputs();
+            showToast('Sambutan Dashboard berhasil diperbarui!', 'success');
+        }
+
+        function addNewAnnouncement() {
+            if (currentUser.role !== 'admin') return;
+            const title = document.getElementById('cmsAnnounceTitle').value.trim();
+            const body = document.getElementById('cmsAnnounceBody').value.trim();
+
+            if (!title || !body) {
+                showToast('Lengkapi judul dan isi pengumuman!', 'error');
+                return;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            const newAnn = { id: 'ANN-' + Date.now(), title, body, date: today };
+
+            announcements.unshift(newAnn);
+            setStorage(STORAGE_ANN, announcements);
+
+            if (window.cloudDb) window.cloudDb.saveAnnouncement(newAnn, newAnn.id);
+
+            document.getElementById('cmsAnnounceTitle').value = '';
+            document.getElementById('cmsAnnounceBody').value = '';
+
+            renderAnnouncements();
+            showToast('Pengumuman baru berhasil diterbitkan!', 'success');
+        }
+
+        function deleteAnnouncement(id) {
+            if (currentUser.role !== 'admin') return;
+            if (confirm('Hapus pengumuman ini?')) {
+                announcements = announcements.filter(a => String(a.id) !== String(id));
+                setStorage(STORAGE_ANN, announcements);
+
+                if (window.cloudDb) window.cloudDb.deleteAnnouncement(id);
+
+                renderAnnouncements();
+                showToast('Pengumuman telah dihapus.', 'info');
+            }
+        }
+
+        // EXPORT CSV
+        function exportToCSV() {
+            let csv = 'ID Santri,Nama Santri,Kelas,Total Setoran,Total Penarikan,Sisa Saldo\n';
+            santriList.forEach(s => {
+                let setor = 0, tarik = 0;
+                transactions.forEach(t => {
+                    if (String(t.nis) === String(s.nis)) {
+                        if (t.type === 'SETOR') setor += t.amount;
+                        if (t.type === 'TARIK') tarik += t.amount;
+                    }
+                });
+                csv += `"${s.nis}","${s.nama}","Kelas ${s.kelas}",${setor},${tarik},${setor - tarik}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Rekapitulasi_Tabungan_AlMadani_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // TOAST NOTIFICATIONS
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            if (!toast || !toastMsg || !toastIcon) return;
+
+            toastMsg.innerText = msg;
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+            } else if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-triangle-exclamation text-rose-400 text-lg';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-blue-400 text-lg';
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
